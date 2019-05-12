@@ -16,6 +16,11 @@ See the companion article https://opencredo.com/kubernetes-aws-terraform-ansible
 
 ## Requirements
 
+Creating control machine:
+
+- vagrant
+- virtual box
+
 Requirements on control machine:
 
 - Terraform (tested with Terraform 0.7.0; **NOT compatible with Terraform 0.6.x**)
@@ -27,6 +32,11 @@ Requirements on control machine:
 - SSH Agent
 - (optionally) AWS CLI
 
+By creating control machine, you can skip installing all of requirements above.
+
+```bash
+vagrant up
+```
 
 ## AWS Credentials
 
@@ -39,16 +49,24 @@ Please read [AWS Documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGu
 ### Terraform and Ansible authentication
 
 Both Terraform and Ansible expect AWS credentials set in environment variables:
+
+```bash
+export AWS_ACCESS_KEY_ID=<access-key-id>
+export AWS_SECRET_ACCESS_KEY="<secret-key>"
 ```
-$ export AWS_ACCESS_KEY_ID=<access-key-id>
-$ export AWS_SECRET_ACCESS_KEY="<secret-key>"
+
+### SSH to control machine
+
+```bash
+vagrant ssh
 ```
 
 If you plan to use AWS CLI you have to set `AWS_DEFAULT_REGION`.
 
 Ansible expects the SSH identity loaded by SSH agent:
-```
-$ ssh-add <keypair-name>.pem
+
+```bash
+ssh-add <keypair-name>.pem
 ```
 
 ## Defining the environment
@@ -67,12 +85,11 @@ You may optionally redefine:
 - `elb_name`: ELB Name for Kubernetes API. Can only contain characters valid for DNS names. Must be unique in the AWS Account (Default: "kubernetes")
 - `owner`: `Owner` tag added to all AWS resources. No functional use. It becomes useful to filter your resources on AWS console if you are sharing the same AWS account with others. (Default: "kubernetes")
 
-
-
 The easiest way is creating a `terraform.tfvars` [variable file](https://www.terraform.io/docs/configuration/variables.html#variable-files) in `./terraform` directory. Terraform automatically imports it.
 
 Sample `terraform.tfvars`:
-```
+
+```bash
 default_keypair_public_key = "ssh-rsa AAA...zzz"
 control_cidr = "123.45.67.89/32"
 default_keypair_name = "lorenzo-glf"
@@ -96,13 +113,14 @@ You also have to edit `./ansible/hosts/ec2.ini`, changing `regions = eu-west-1` 
 
 Run Terraform commands from `./terraform` subdirectory.
 
-```
-$ terraform plan
-$ terraform apply
+```bash
+terraform plan
+terraform apply
 ```
 
 Terraform outputs public DNS name of Kubernetes API and Workers public IPs.
-```
+
+```bash
 Apply complete! Resources: 12 added, 2 changed, 0 destroyed.
   ...
 Outputs:
@@ -119,8 +137,9 @@ Terraform generates `ssh.cfg`, SSH configuration file in the project directory.
 It is convenient for manually SSH into machines using node names (`controller0`...`controller2`, `etcd0`...`2`, `worker0`...`2`), but it is NOT used by Ansible.
 
 e.g.
-```
-$ ssh -F ssh.cfg worker0
+
+```bash
+ssh -F ssh.cfg worker0
 ```
 
 ## Install Kubernetes, with Ansible
@@ -132,20 +151,24 @@ We have multiple playbooks.
 ### Install and set up Kubernetes cluster
 
 Install Kubernetes components and *etcd* cluster.
-```
-$ ansible-playbook infra.yaml
+
+```bash
+ansible-playbook infra.yaml
 ```
 
 ### Setup Kubernetes CLI
 
 Configure Kubernetes CLI (`kubectl`) on your machine, setting Kubernetes API endpoint (as returned by Terraform).
-```
-$ ansible-playbook kubectl.yaml --extra-vars "kubernetes_api_endpoint=<kubernetes-api-dns-name>"
+
+You can use `terraform output` to see the output.
+
+```bash
+ansible-playbook kubectl.yaml --extra-vars "kubernetes_api_endpoint=<kubernetes-api-dns-name>"
 ```
 
 Verify all components and minions (workers) are up and running, using Kubernetes CLI (`kubectl`).
 
-```
+```bash
 $ kubectl get componentstatuses
 NAME                 STATUS    MESSAGE              ERROR
 controller-manager   Healthy   ok
@@ -164,20 +187,22 @@ ip-10-43-0-32.eu-west-1.compute.internal   Ready     6m
 ### Setup Pod cluster routing
 
 Set up additional routes for traffic between Pods.
-```
-$ ansible-playbook kubernetes-routing.yaml
+
+```bash
+ansible-playbook kubernetes-routing.yaml
 ```
 
 ### Smoke test: Deploy *nginx* service
 
 Deploy a *ngnix* service inside Kubernetes.
-```
-$ ansible-playbook kubernetes-nginx.yaml
+
+```bash
+ansible-playbook kubernetes-nginx.yaml
 ```
 
 Verify pods and service are up and running.
 
-```
+```bash
 $ kubectl get pods -o wide
 NAME                     READY     STATUS    RESTARTS   AGE       IP           NODE
 nginx-2032906785-9chju   1/1       Running   0          3m        10.200.1.2   ip-10-43-0-31.eu-west-1.compute.internal
@@ -196,13 +221,14 @@ nginx-2032906785-ynuhi   1/1       Running   0          3m        10.200.0.3   i
 
 Retrieve the port *nginx* has been exposed on:
 
-```
+```bash
 $ kubectl get svc nginx --output=jsonpath='{range .spec.ports[0]}{.nodePort}'
 32700
 ```
 
 Now you should be able to access *nginx* default page:
-```
+
+```bash
 $ curl http://<worker-0-public-ip>:<exposed-port>
 <!DOCTYPE html>
 <html>
@@ -213,8 +239,7 @@ $ curl http://<worker-0-public-ip>:<exposed-port>
 
 The service is exposed on all Workers using the same port (see Workers public IPs in Terraform output).
 
-
-# Known simplifications
+## Known simplifications
 
 There are many known simplifications, compared to a production-ready solution:
 
