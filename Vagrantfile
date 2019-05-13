@@ -13,9 +13,6 @@ Vagrant.configure(2) do |config|
       node.vm.box = "ubuntu/trusty64"
       node.vm.hostname = "utility"
 
-      # node.vm.provision "shell", inline: "eval $(ssh-agent) && /
-      #                                     ssh-add vagrant-aws-k8s-key-pair.pem", privileged: true
-
       node.vm.provision "shell", inline: "echo 'export AWS_ACCESS_KEY_ID=#{AWS_ACCESS_KEY_ID}' >> /etc/environment", privileged: true
       node.vm.provision "shell", inline: "echo 'export AWS_SECRET_ACCESS_KEY=#{AWS_SECRET_ACCESS_KEY}' >> /etc/environment", privileged: true
 
@@ -40,7 +37,6 @@ Vagrant.configure(2) do |config|
                                           mv terraform /usr/local/bin/terraform && \
                                           chmod +x /usr/local/bin/terraform && \
                                           rm terraform_#{TERRAFORM_VERSION}_linux_amd64.zip", privileged: true
-
     end
   end
 end

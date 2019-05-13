@@ -1,0 +1,22 @@
+---
+###########################
+# Setup Kubernetes client
+###########################
+
+# Expects `kubernetes_api_endpoint` to be defined passed in
+# as `--extra-vars "kubernetes_api_endpoint=xxxx"`
+
+- hosts: localhost
+  connection: local
+
+  vars:
+    jenkins_path: "{{ playbook_dir }}/../jenkins"
+    sonarqube_path: "{{ playbook_dir }}/../sonarqube"
+
+  tasks:
+
+  - name: Launch jenkins
+    command: "kubectl apply -f {{ jenkins_path }}/"
+
+  - name: Launch sonarqube
+    command: "kubectl apply -f {{ sonarqube_path }}/"

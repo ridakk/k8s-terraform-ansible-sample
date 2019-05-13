@@ -1,5 +1,5 @@
 ---
-apiVersion: apps/v1beta2
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: test-app
@@ -26,7 +26,7 @@ spec:
             topologyKey: "kubernetes.io/hostname"
       containers:
       - name: test-app
-        image: 'test-app:latest'
+        image: 'kadirgoktas/node-test-app:latest'
         ports:
         - name: http-port
           containerPort: 8050
