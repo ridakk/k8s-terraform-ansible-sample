@@ -10,7 +10,7 @@ domain = Domain.global()
 store = Jenkins.instance.getExtensionList('com.cloudbees.plugins.credentials.SystemCredentialsProvider')[0].getStore()
 
 // TODO: need to move this credentials to env or somewhere else
-GITHUB_TOKEN = new StringCredentialsImpl(CredentialsScope.GLOBAL,"GITHUB_TOKEN","GITHUB_TOKEN",Secret.fromString("462a235be1ef83dad6f91c812e4f9dac12562b3a"))
+GITHUB_TOKEN = new StringCredentialsImpl(CredentialsScope.GLOBAL,"GITHUB_TOKEN","GITHUB_TOKEN",Secret.fromString("<token>"))
 KUBECTL = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,"KUBECTL", "KUBECTL","admin","chAng3m3")
 
 store.addCredentials(domain, GITHUB_TOKEN)
