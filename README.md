@@ -62,7 +62,7 @@ root@utility:/vagrant/terraform# terraform plan
 root@utility:/vagrant/terraform# terraform apply
 
 root@utility:/vagrant/ansible# ansible-playbook infra.yaml
-root@utility:/vagrant/ansible# ansible-playbook kubectl.yaml --extra-vars "kubernetes_api_endpoint=kubernetes-1593228413.eu-west-1.elb.amazonaws.com"
+root@utility:/vagrant/ansible# ansible-playbook kubectl.yaml --extra-vars "kubernetes_api_endpoint=<kubernetes_api_endpoint>"
 root@utility:/vagrant/ansible# ansible-playbook kubernetes-routing.yaml
 root@utility:/vagrant/ansible# ansible-playbook kubectl-jenkins-sonar.yaml
 ```
