@@ -14,11 +14,13 @@ spec:
         app: sonarqube
     spec:
       containers:
-      - name: sonarqube
-        image: 'sonarqube:6.7.7-community'
-        ports:
-        - name: http-port
-          containerPort: 9000
+        - name: sonarqube
+          image: sonarqube:6.7.7-community
+          ports:
+          - name: http-port
+            containerPort: 9000
+      hostNetwork: true
+      dnsPolicy: ClusterFirst
   #   volumeMounts:
   #     - name: sonar-conf
   #       mountPath: /opt/sonarqube/conf

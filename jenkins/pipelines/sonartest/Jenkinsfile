@@ -1,0 +1,19 @@
+withCredentials([string(credentialsId: "GITHUB_TOKEN",variable: 'GITHUB_TOKEN')]) {
+    env.GITHUB_TOKEN = "${GITHUB_TOKEN}"
+}
+
+node {
+  stage('SCM') {
+        cleanWs()
+        sh 'git config --global credential.helper store'
+        sh 'echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" >> ~/.git-credentials'
+    git 'https://github.com/ridakk/shopping-cart-js'
+  }
+  stage('SonarQube analysis') {
+    // requires SonarQube Scanner 2.8+
+    def scannerHome = tool 'SonarQube Scanner 2.8';
+    withSonarQubeEnv('sonarqube') {
+      sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=node-test-app -Dsonar.sources=."
+    }
+  }
+}

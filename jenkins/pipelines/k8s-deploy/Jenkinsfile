@@ -1,0 +1,9 @@
+ENV.SERVER_URL = SERVER_URL
+
+node {
+  stage('Apply Kubernetes files') {
+    withKubeConfig(caCertificate: '/var/lib/kubernetes/ca.pem', clusterName: 'kubernetes-not-the-hardest-way', contextName: 'default-context', credentialsId: 'KUBECTL', namespace: 'default', serverUrl: "$SERVER_URL") {
+      sh 'kubectl apply -f /var/jenkins_home/k8s-deploy/deployment.yaml'
+    }
+  }
+}

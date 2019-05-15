@@ -4,24 +4,33 @@ Original [Readme]https://github.com/opencredo/k8s-terraform-ansible-sample)
 
 This repo has a vagrantfile to provide requirements on control machine, aims to automate setup.
 
+`!!! k8s version in this repo is quite outdated !!!`
+
+As the main repo is pretty old and there is `kube-dns` configuration, pod-to-internet connection was not working.
+
+Tried updating k8s version but current version is too old to be upgraded easily.
+
+But i managed to fix pod-to-internet issue with adding below lines to deployment definitions
+
+```yaml
+      hostNetwork: true
+      dnsPolicy: ClusterFirst
+```
+
 ## AWS Credentials
 
 ### AWS KeyPair
-
-You need a valid AWS Identity (`.pem`) file and the corresponding Public Key. Terraform imports the [KeyPair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html) in your AWS account. Ansible uses the Identity to SSH into machines.
-
-Please read [AWS Documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#how-to-generate-your-own-key-and-import-it-to-aws) about supported formats.
 
 Place the `.pem` into project repository by renaming it as `vagrant-aws-k8s-key-pair.pem`.
 (All `.pem` files are ignored but be sure not to upload it ro remote repository)
 
 ### Terraform and Ansible authentication
 
-Both Terraform and Ansible expect AWS credentials set in environment variables:
+Set AWS credentials on host machine, vagrant controller machine will inherit them automatically.
 
 ```bash
 export AWS_ACCESS_KEY_ID=<access-key-id>
-export AWS_SECRET_ACCESS_KEY="<secret-key>"
+export AWS_SECRET_ACCESS_KEY=<secret-key>
 ```
 
 ## Requirements
@@ -37,8 +46,6 @@ Once vagrant machine is ready, you are ready to start using terraform and ansibl
 vagrant up
 ```
 
-`Follow configuration in original post if required`.
-
 ### SSH to control machine
 
 Ssh to control machine and switch to root user
@@ -48,68 +55,58 @@ vagrant ssh
 sudo su
 ```
 
-## Provision infrastructure, with Terraform
-
-Run Terraform commands from `./terraform` subdirectory.
+## Provision infrastructure
 
 ```bash
-terraform plan
-terraform apply
+root@utility:/vagrant/terraform# terraform plan
+root@utility:/vagrant/terraform# terraform apply
+
+root@utility:/vagrant/ansible# ansible-playbook infra.yaml
+root@utility:/vagrant/ansible# ansible-playbook kubectl.yaml --extra-vars "kubernetes_api_endpoint=kubernetes-1593228413.eu-west-1.elb.amazonaws.com"
+root@utility:/vagrant/ansible# ansible-playbook kubernetes-routing.yaml
+root@utility:/vagrant/ansible# ansible-playbook kubectl-jenkins-sonar.yaml
 ```
 
-### Install and set up Kubernetes cluster
+## Accessing Jenkins and Sonar
 
-Install Kubernetes components and *etcd* cluster.
+Check which worker Jenkins and Sonar deployed
 
 ```bash
-ansible-playbook infra.yaml
+root@utility:/vagrant/ansible# kubectl get pods -o wide
+NAME                         READY   STATUS    RESTARTS   AGE     IP           NODE                                       NOMINATED NODE   READINESS GATES
+jenkins-1529594462-xf7oa     1/1     Running   0          3h45m   10.43.0.31   ip-10-43-0-31.eu-west-1.compute.internal   <none>           <none>
+sonarqube-2261369614-moa3p   1/1     Running   0          3h48m   10.43.0.30   ip-10-43-0-30.eu-west-1.compute.internal   <none>           <none>
 ```
 
-If you receive (public-key denied) error, try re-adding for `.pem` as below and double check if your private ad public key matches.
+Check public ip of the instance and login from browser
 
-```bash
-eval $(ssh-agent)
-ssh-add /vagrant/vagrant-aws-k8s-key-pair.pem
-```
+for jekins: http://<worker-ip>:8080
+for sonar: http://<worker-ip>:9000
 
-### Setup Kubernetes CLI
+## Jenkins Plugins and Pipelines
 
-Configure Kubernetes CLI (`kubectl`) on your machine, setting Kubernetes API endpoint (as returned by Terraform).
+All plugins are listed in `jenkins/plugins.txt` and bundled in docker image while building via `jenkins/Dockerfile`
 
-```bash
-ansible-playbook kubectl.yaml --extra-vars "kubernetes_api_endpoint=<kubernetes-api-dns-name>"
-```
+Jenkins configuration and plugin setups are done via groovy scripts under `jenkins/groovy` as well as creating jobs
 
-### Setup Pod cluster routing
+So Jenkins is completely disposable unless if you want to keep job history
 
-Set up additional routes for traffic between Pods.
+To change admin user password and github token, update `jenkins/groovy/add-credentials.groovy` and `jenkins/groovy/basic-security.groovy`
 
-```bash
-ansible-playbook kubernetes-routing.yaml
-```
+## SonarQube configuration
 
-### Deploy Jenkins and SonarQube
+Need to update SonarQube server url and auth token manually once sonar is up and running
 
-!!! Jenkins seems to be broken https://github.com/jenkinsci/docker/issues/681 !!!
+- login to sonar with admin:admin
+- create new user
+- loging with new user and create a token
+- update SonarQube configuration token
+- update SonarQube server url
 
-Deploy a *jenkins* and *sonar* service inside Kubernetes.
+`Need to check how to automate the flow above.`
 
-```bash
-ansible-playbook kubectl-jenkins-sonar.yaml
-```
+## Test App
 
-Verify pods and service are up and running.
+A simple nodejs app is under `test-app`, has its own Dockerfile and used to test k8s deployment via Jenkins
 
-```bash
-$ kubectl get pods -o wide
-NAME                        READY   STATUS    RESTARTS   AGE     IP           NODE                                       NOMINATED NODE   READINESS GATES
-jenkins-1308212290-skyp4    1/1     Running   0          2m21s   10.200.2.2   ip-10-43-0-32.eu-west-1.compute.internal   <none>           <none>
-sonarqube-212583104-vdlql   1/1     Running   0          101s    10.200.0.2   ip-10-43-0-30.eu-west-1.compute.internal   <none>           <none>
-$ kubectl get services
-NAME         TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
-jenkins      NodePort    10.32.0.195   <none>        8080:31010/TCP   5m32s
-kubernetes   ClusterIP   10.32.0.1     <none>        443/TCP          12m
-sonarqube    NodePort    10.32.0.69    <none>        9000:31020/TCP   105s
-
-```
-
+But the SonarScanner runs one of my public github repositories.

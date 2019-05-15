@@ -2,6 +2,8 @@ FROM openjdk:8-jdk-stretch
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
+ENV JENKINS_UC_DOWNLOAD=http://ftp-nyc.osuosl.org/pub/jenkins
+
 ARG user=jenkins
 ARG group=jenkins
 ARG uid=1000
@@ -30,7 +32,9 @@ VOLUME $JENKINS_HOME
 # or config file with your custom jenkins Docker image.
 RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d
 
-ADD groovy/* /usr/share/jenkins/ref/init.groovy.d
+RUN mkdir -p $JENKINS_HOME/pipelines
+ADD pipelines/ $JENKINS_HOME/pipelines/
+ADD groovy/* /usr/share/jenkins/ref/init.groovy.d/
 
 # Use tini as subreaper in Docker container to adopt zombie processes
 ARG TINI_VERSION=v0.16.1
@@ -41,6 +45,11 @@ RUN curl -fsSL https://github.com/krallin/tini/releases/download/${TINI_VERSION}
   && gpg --verify /sbin/tini.asc \
   && rm -rf /sbin/tini.asc /root/.gnupg \
   && chmod +x /sbin/tini
+
+# install kubectl
+RUN curl -sSLO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl \
+  && chmod +x ./kubectl \
+  && mv ./kubectl /usr/local/bin/kubectl
 
 # jenkins version being bundled in this docker image
 ARG JENKINS_VERSION

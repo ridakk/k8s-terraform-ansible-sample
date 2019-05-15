@@ -14,11 +14,21 @@ spec:
         app: jenkins
     spec:
       containers:
-      - name: jenkins
-        image: 'jenkins:2.60.3'
-        ports:
-        - name: http-port
-          containerPort: 8080
+        - name: jenkins
+          image: kadirgoktas/jenkins-priv:latest
+          ports:
+          - name: http-port
+            containerPort: 8080
+          volumeMounts:
+            - name: kubernetes-dir
+              mountPath: /var/lib/kubernetes
+              readOnly: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirst
+      volumes:
+        - name: kubernetes-dir
+          hostPath:
+            path: /var/lib/kubernetes
     #   volumeMounts:
     #     - name: jenkins-home
     #       mountPath: /var/jenkins_home
