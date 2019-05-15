@@ -20,8 +20,6 @@ String fileContents = new File('/var/jenkins_home/pipelines/k8s-deploy/Jenkinsfi
 job.definition = new CpsFlowDefinition(fileContents, Boolean.TRUE)
 
 ParameterDefinition[] parameters = [
-  tagParam,
-  nodeEnvParam,
   new StringParameterDefinition('SERVER_URL', '', 'k8s cluster url', true),
 ]
 job.addProperty(new ParametersDefinitionProperty(parameters))
