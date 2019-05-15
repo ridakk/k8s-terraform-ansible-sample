@@ -6,7 +6,7 @@ This repo has a vagrantfile to provide requirements on control machine, aims to 
 
 `!!! k8s version in this repo is quite outdated !!!`
 
-As the main repo is pretty old and there is `kube-dns` configuration, pod-to-internet connection was not working.
+As the main repo is pretty old and there is no `kube-dns` configuration, pod-to-internet connection was not working.
 
 Tried updating k8s version but current version is too old to be upgraded easily.
 
